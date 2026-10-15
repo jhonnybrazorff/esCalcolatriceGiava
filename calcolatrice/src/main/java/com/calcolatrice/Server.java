@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Server {
     private static final int PORT = 12345;
@@ -14,33 +15,48 @@ public class Server {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server in ascolto sulla porta " + PORT);
 
-            while (true) {
-                try (Socket clientSocket = serverSocket.accept();
-                     BufferedReader input = new BufferedReader(
-                             new InputStreamReader(clientSocket.getInputStream()));
-                     PrintWriter output = new PrintWriter(
-                             clientSocket.getOutputStream(), true)) {
+            while(true){
+                Socket clientSocket = serverSocket.accept();
+                new Thread(() -> clientHandler(clientSocket)).start();
 
-                    System.out.println("Client connesso: "
-                            + clientSocket.getInetAddress());
-
-                    String richiesta = input.readLine();
-
-                    if (richiesta == null) {
-                        continue;
-                    }
-
-                    output.println(calcola(richiesta));
-                } catch (IOException e) {
-                    System.err.println("Errore nella comunicazione: "
-                            + e.getMessage());
-                }
             }
+
         } catch (IOException e) {
             System.err.println("Impossibile avviare il server: "
                     + e.getMessage());
         }
+
     }
+
+
+
+
+    private static void clientHandler(Socket socket) {
+        try{
+            System.out.println("Client connesso: " + socket.getInetAddress() + ":" + socket.getPort());
+
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        
+            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+
+
+
+            String richiesta = input.readLine();
+
+            if (richiesta != null) {
+                output.println(calcola(richiesta));
+            }
+
+
+        }
+        
+        catch(Exception e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+
 
     private static String calcola(String richiesta) {
         String[] parti = richiesta.trim().split("\\s+");
